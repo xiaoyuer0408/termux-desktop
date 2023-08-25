@@ -1,7 +1,13 @@
+**`LAST Updated`** : `August 2023`
+
+> Unmaintained : Due to Termux not working properly on new Android versions and also Termux not getting maintained properly.
+
+---
+
 ![logo](./previews/logo.png) <br />
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Maintained%3F-Yes-green?style=for-the-badge">
+  <img src="https://img.shields.io/badge/Maintained%3F-No-red?style=for-the-badge">
   <img src="https://img.shields.io/github/license/adi1090x/termux-desktop?style=for-the-badge">
   <img src="https://img.shields.io/github/issues/adi1090x/termux-desktop?color=violet&style=for-the-badge">
   <img src="https://img.shields.io/github/forks/adi1090x/termux-desktop?color=teal&style=for-the-badge">
@@ -24,7 +30,7 @@ Termux is an *Android terminal emulator* and **Linux environment** app that work
 
 You can install termux form google play store or from f-droid. <br />
 
-- Get it on [Google Play](https://play.google.com/store/apps/details?id=com.termux)
+- Get it on [Github](https://github.com/termux/termux-app)
 - Download from [F-Droid](https://f-droid.org/packages/com.termux/) <br />
 
 More information about installation is [here](https://wiki.termux.com/wiki/Main_Page) <br />

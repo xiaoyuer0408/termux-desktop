@@ -62,7 +62,7 @@ _pkgs=(bc bmon calc calcurse curl dbus desktop-file-utils elinks feh fontconfig-
 setup_base() {
 	echo -e ${RED}"\n[*] Installing Termux Desktop..."
 	echo -e ${CYAN}"\n[*] Updating Termux Base... \n"
-	{ reset_color; pkg autoclean; pkg upgrade -y; }
+	{ reset_color; pkg autoclean; pkg update -y; pkg upgrade -y; }
 	echo -e ${CYAN}"\n[*] Enabling Termux X11-repo... \n"
 	{ reset_color; pkg install -y x11-repo; }
 	echo -e ${CYAN}"\n[*] Installing required programs... \n"
@@ -99,7 +99,7 @@ setup_omz() {
 	{ reset_color; git clone https://github.com/robbyrussell/oh-my-zsh.git --depth 1 $HOME/.oh-my-zsh; }
 	cp $HOME/.oh-my-zsh/templates/zshrc.zsh-template $HOME/.zshrc
 	sed -i -e 's/ZSH_THEME=.*/ZSH_THEME="aditya"/g' $HOME/.zshrc
-	sed -i -e 's|# export PATH=.*|export PATH=$HOME/.local/bin:$PATH|g' $HOME/.zshrc
+
 	# ZSH theme
 	cat > $HOME/.oh-my-zsh/custom/themes/aditya.zsh-theme <<- _EOF_
 		# Default OMZ theme
@@ -184,11 +184,32 @@ setup_omz() {
 		]	
 	_EOF_
 	# change shell and reload configs
-	{ chsh -s zsh; termux-reload-settings; termux-setup-storage; }
+	{ chsh -s zsh; } \
+	&& { echo -e "${GREEN}Changed shell to /bin/zsh"; } \
+	|| { echo -e "${MAGENTA}Failed to change shell. Please run $ chsh -s zsh"; }
+
+	{ termux-reload-settings; } \
+	&& { echo -e "${GREEN}Settings reloaded successfully"; } \
+	|| { echo -e "${MAGENTA}Failed to run $ termux-reload-settings. Restart app after installation is complete"; }
+
+	{ termux-setup-storage; } \
+	&& { echo -e "${GREEN}Ran termux-setup-storage successfully, you should now have a ~/storage folder"; } \
+	|| { echo -e "${MAGENTA}Failed to execute $ termux-setup-storage"; }
 }
 
 ## Configuration
 setup_config() {
+	# ensure /etc/machine-id exists for xfce4-settings
+	# ref: issue #110 - https://github.com/adi1090x/termux-desktop/issues/110
+	#
+	# Check if ${PREFIX}/etc/machine-id exists, if not, generate it
+	if [[ $(find ${PREFIX}/etc/ -type f -name machine-id | wc -l) == 0 ]]; then
+		dbus-uuidgen --ensure=/data/data/com.termux/files/usr/etc/machine-id
+		machineUUID=$(cat ${PREFIX}/etc/machine-id)
+		echo -e ${CYAN}"\n[*] Generated UUID: ${machineUUID}"
+		reset_color
+	fi
+
 	# backup
 	configs=($(ls -A $(pwd)/files))
 	echo -e ${RED}"\n[*] Backing up your files and dirs... "
@@ -202,9 +223,9 @@ setup_config() {
 	done
 	
 	# Copy config files
-	echo -e ${RED}"\n[*] Coping config files... "
+	echo -e ${RED}"\n[*] Copiyng config files... "
 	for _config in "${configs[@]}"; do
-		echo -e ${CYAN}"\n[*] Coping $_config..."
+		echo -e ${CYAN}"\n[*] Copiyng $_config..."
 		{ reset_color; cp -rf $(pwd)/files/$_config $HOME; }
 	done
 	if [[ ! -d "$HOME/Desktop" ]]; then
@@ -229,6 +250,7 @@ setup_vnc() {
 		# Launch Openbox Window Manager.
 		openbox-session &
 	_EOF_
+        chmod u+rx $HOME/.vnc/xstartup
 	if [[ $(pidof Xvnc) ]]; then
 		    echo -e ${ORANGE}"[*] Server Is Running..."
 		    { reset_color; vncserver -list; }
@@ -267,6 +289,15 @@ setup_launcher() {
 	if [[ -f "$file" ]]; then
 		echo -e ${GREEN}"[*] Script ${ORANGE}$file ${GREEN}created successfully."
 	fi
+	
+	# defining PATH reference for ~/.local/bin in /etc/profile
+	# to avoid issues with launching the whole script, when zsh / oh-my-zsh fails to install
+	#   ref: https://github.com/adi1090x/termux-desktop/issues/99
+	echo "export PATH=${PATH}:${HOME}/.local/bin" >> ${PREFIX}/etc/profile
+	
+	if [[ $(grep "export PATH.*/home/.local/bin" ${PREFIX}/etc/profile | wc -l) > 0 ]]; then
+		echo -e ${GREEN}"[*] \$PATH reference ${ORANGE}~/.local/bin ${GREEN}added to /etc/profile successfully."
+	fi
 }
 
 ## Finish Installation
@@ -280,6 +311,9 @@ post_msg() {
 		  
 	_MSG_
 	{ reset_color; exit 0; }
+	
+	# replace the current session's shell with zsh
+	exec ${PREFIX}/bin/zsh
 }
 
 ## Install Termux Desktop
